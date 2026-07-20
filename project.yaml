@@ -2,10 +2,10 @@ id: 18
 name: api-gateway-lite
 program:
   id: delivery-observability-infra
-  narrative_fit: This gateway demonstrates how to add auth, rate limiting, and distributed tracing in front of any upstream service — a foundational pattern for observability infrastructure.
+  narrative_fit: This gateway demonstrates how to add auth, rate limiting, and distributed tracing in front of any upstream service â€” a foundational pattern for observability infrastructure.
   shared_assets:
     - ratelimit/token-bucket pattern
-status: benchmarked
+status: published
 claim: gateway com auth, rate limit e observabilidade
 stack:
   - go
