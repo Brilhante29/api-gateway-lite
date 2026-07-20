@@ -4,33 +4,38 @@ Project: `18 - api-gateway-lite`
 
 ## Review Points
 
-- [ ] after scaffold
-- [ ] after architecture decision
-- [ ] after first working slice
-- [ ] after benchmark result
-- [ ] before publication
+- [x] after scaffold
+- [x] after architecture decision
+- [x] after first working slice
+- [x] after benchmark result
+- [x] before publication
 - [ ] after CI failure, if applicable
 
 ## Findings
 
 | Finding | Classification | Kit Area | Action | Status |
 |---|---|---|---|---|
-|  | `patch_now|backlog|reject` | `decision-brain|docs|templates|sdd|harness|metrics|contracts|skills|validation` |  | pending |
+| Token bucket rate limiter is generic enough for kit reuse | backlog | harness | Extract to portfolio-reuse-kit/templates/ratelimit | recorded |
+| Benchmark suite pattern (in-process servers) could be templated | backlog | templates | Extract in-process benchmark pattern | recorded |
 
 ## Patch Now Decisions
 
-- 
+- None (project-specific implementation; no kit fix needed)
 
 ## Backlog Decisions
 
-- 
+- Token bucket rate limiter template for future Go projects
+- In-process benchmark harness template
 
 ## Rejected Improvements
 
-- 
+| Improvement | Reason |
+|---|---|
+| OTel span attributes in semconv format | Adds dependency coupling; YAGNI for current benchmark scope |
+| Config file support (YAML/TOML) | Env vars suffice for the 6-config surface area |
 
 ## Final Gate
 
-- [ ] Reusable improvements were patched or recorded.
-- [ ] Project-specific implementation was not moved into the kit.
-- [ ] Validation reflects any repeated mistake discovered during the project.
+- [x] Reusable improvements were patched or recorded.
+- [x] Project-specific implementation was not moved into the kit.
+- [x] Validation reflects any repeated mistake discovered during the project.

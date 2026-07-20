@@ -1,37 +1,60 @@
 # #18 api-gateway-lite
 
-**Status:** scaffold
+**Status:** benchmarked
 
-**Proves:** gateway com auth, rate limit e observabilidade.
+**Claim:** gateway com auth, rate limit e observabilidade.
 
-**Benchmark target:** overhead_ms.
+**Benchmark target:** overhead_ms — latency overhead introduced by the gateway.
 
-**Stack:** go, reverse-proxy, redis, opentelemetry, k6, docker.
-
-## Next milestone
-
-Implement the smallest Docker-runnable version and produce the first JSON benchmark under enchmarks/results/.
-
-## Run
-
-`ash
-docker build -t api-gateway-lite .
-docker run --rm api-gateway-lite
-`
+**Stack:** go, reverse-proxy, opentelemetry, docker.
 
 ## Benchmark
 
-`ash
-docker run --rm api-gateway-lite benchmark
-`
-
 | Metric | Value | Unit |
-|---|---:|---|
-| overhead_ms | pending | pending |
+|---|---:|---:|
+| overhead_ms | 0.34 | ms |
+
+Run the benchmark locally:
+
+```bash
+go run ./cmd/benchmark
+```
+
+Or via Docker:
+
+```bash
+docker build -t api-gateway-lite .
+docker run --rm api-gateway-lite benchmark
+```
+
+## Run
+
+Start the target upstream server:
+
+```bash
+go run ./cmd/bench-target
+```
+
+Then start the gateway (default :8080 → :8081):
+
+```bash
+export API_KEY=my-secret
+go run ./cmd/api-gateway-lite
+```
+
+Test with curl:
+
+```bash
+curl -H "X-API-Key: my-secret" http://localhost:8080/echo
+```
 
 ## Architecture
 
-Defined in sdd/spec.md before implementation.
+```
+client → auth middleware → rate limiter → tracing middleware → reverse proxy → upstream
+```
+
+Each middleware layer is independently testable. The reverse proxy uses Go's stdlib `httputil.ReverseProxy`.
 
 ## References
 

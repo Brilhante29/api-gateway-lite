@@ -2,40 +2,40 @@
 
 ## Hypothesis
 
-gateway com auth, rate limit e observabilidade, measured by overhead_ms.
+gateway com auth, rate limit e observabilidade, measured by overhead_ms — the latency difference between a direct upstream call and a gateway-mediated call.
 
 ## Command
 
-`ash
-pending
-`
+```bash
+go run ./cmd/benchmark
+```
 
 ## Environment
 
-- OS: pending
-- CPU: pending
-- RAM: pending
-- GPU: pending
-- Docker version: pending
-- Date: pending
+- OS: any (Docker or Go 1.22+)
+- CPU: any
+- RAM: any
+- GPU: none
+- Docker version: any
+- Date: recorded in result JSON
 
 ## Inputs
 
-- fixture: pending
-- dataset size: pending
-- repetitions: pending
-- warmup: pending
+- fixture: in-process echo server
+- dataset size: N/A
+- repetitions: 100 requests per path
+- warmup: none
 
 ## Metrics
 
 | Metric | Unit | Source | Why it matters |
 |---|---:|---|---|
-| overhead_ms | pending | benchmark script | proves the repo claim |
+| overhead_ms | ms | benchmark suite | proves the repo claim — the gateway should add minimal latency |
 
 ## Result schema
 
-Output must be JSON and include project, metric, alue, unit, 	imestamp, environment, and command.
+Output must be JSON and include project, metric, value, unit, timestamp, environment, and command. Written to `benchmarks/results/latest.json`.
 
 ## Post angle
 
-#18 api-gateway-lite: overhead_ms as a reproducible portfolio benchmark.
+#18 api-gateway-lite: overhead_ms as a reproducible portfolio benchmark — a minimal Go gateway that proves auth + rate limiting + tracing can stay under measurable overhead.

@@ -2,119 +2,100 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Decision Type
 
-`<stack|api-style|cloud|messaging|database|library|runtime|framework>`
+stack, library, runtime
 
 ## Context
 
-Project: `<project-name>`
-Problem: `<problem to solve>`
-Portfolio program: `<program>`
-Public signal: `<GitHub/LinkedIn proficiency signal>`
-Benchmark: `<metric>`
+Project: api-gateway-lite
+Problem: Minimal gateway with auth, rate limiting, and observability — measured by latency overhead
+Portfolio program: delivery-observability-infra
+Public signal: Go reverse-proxy middleware proficiency
+Benchmark: overhead_ms
 
 ## Selected Option
 
-Selected: `<option>`
+Selected: Go stdlib net/http/httputil.ReverseProxy + in-memory token bucket + OTel noop exporter
 
 Reason:
 
-`<Why this option fits the problem, benchmark, and public signal.>`
+Go's stdlib ReverseProxy is the lightest possible forwarder — no framework overhead. The in-memory token bucket avoids a Redis dependency for the default local path. OTel with noop exporter gives full tracing API without requiring a collector, keeping the default demo credential-free.
 
 ## Decision Brain Fields
 
-- Stack profile: `<spring-kotlin-backend|fastapi-backend|go-backend|node-typescript-backend|angular|nextjs|python-ml|terraform>`
-- API style: `<rest-http|graphql|grpc|websocket|sse|cli>`
-- Messaging: `<none|outbox-only|rabbitmq|kafka|redis-streams|nats>`
-- Cloud mode: `<none|kumo-local-first|adapter-fake|real-cloud-required>`
-- Database/runtime: `<selection>`
-- Library policy: `<selection>`
+- Stack profile: go-backend
+- API style: rest-http
+- Messaging: none
+- Cloud mode: none
+- Database/runtime: go 1.22, alpine 3.20
+- Library policy: stdlib for proxy, OTel SDK for tracing, in-memory for rate limiting
 
 ## Engineering Principles
 
 Coupling boundary:
 
-`<Domain/use cases must not depend on framework, DB, broker, cloud SDK, transport, or UI.>`
+Middleware depends on `http.Handler` interface; no domain code depends on transport detail.
 
 SOLID application:
 
-- SRP: `<how responsibilities are split>`
-- OCP: `<how behavior extends without rewriting stable policy>`
-- LSP: `<how adapters/fakes/reals stay substitutable>`
-- ISP: `<small ports/interfaces used>`
-- DIP: `<high-level policy depends on abstractions>`
+- SRP: each internal package owns exactly one concern (auth, rate-limit, proxy, telemetry)
+- OCP: middleware stack composable by wrapping handlers; new middleware added without modifying existing code
+- LSP: any `http.Handler` can be wrapped; no interface subversion
+- ISP: middleware interface is `func(http.Handler) http.Handler` — one method
+- DIP: high-level HTTP server depends on `http.Handler` abstraction, not concrete middleware
 
 Simplicity:
 
-- KISS: `<simplest design that proves the claim>`
-- YAGNI: `<future abstraction intentionally not added>`
-- DRY: `<duplicated business knowledge removed without premature abstraction>`
+- KISS: in-memory token bucket over Redis avoids unnecessary network dependency
+- YAGNI: circuit breaker, retry logic, request logging not added
+- DRY: duplicated business knowledge removed without premature abstraction
 
 Testability evidence:
 
-- `<use case test without transport/infrastructure>`
-- `<adapter or contract test>`
+- Auth test: httptest without real servers
+- Proxy test: httptest upstream without starting real process
+- Limiter test: pure Go, no network
+- Benchmark test: measure function tested with httptest
+
 ## Rejected Options
 
 | Option | Why rejected |
 |---|---|
-| `<option>` | `<reason>` |
-| `<option>` | `<reason>` |
+| gin-gonic/gin framework | stdlib is lighter for benchmark purity; gin adds measurable overhead |
+| Redis-backed rate limiter | unnecessary network hop for local demo; YAGNI for single-instance |
+| OTLP gRPC exporter | stdout exporter is simpler for local demo; gRPC adds dependency weight |
 
 ## API Contract
 
-Contract artifact:
+Contract artifact: none (internal proxy, no public API surface)
 
-`<OpenAPI|GraphQL schema|protobuf|event contract|CLI output schema|none>`
-
-GraphQL controls, when applicable:
-
-- Query complexity/depth limit: `<yes|no|not applicable>`
-- N+1 prevention: `<DataLoader/batching plan|not applicable>`
-- Field-level auth rule: `<yes|no|not applicable>`
+GraphQL controls, when applicable: N/A
 
 ## Cloud Local-First
 
-Local provider:
+Local provider: none
 
-`<kumo|none|adapter fake>`
+Real provider target: none
 
-Real provider target:
+Config switch: `CLOUD_PROVIDER=none`
 
-`<aws|none|other>`
-
-Config switch:
-
-```txt
-CLOUD_PROVIDER=<kumo|aws|none>
-CLOUD_ENDPOINT=http://localhost:4566
-```
-
-Unsupported local behaviors:
-
-- `<behavior or none>`
+Unsupported local behaviors: none
 
 ## Benchmark Impact
 
-Expected impact:
+Expected impact: overhead_ms should be < 2ms for the simple echo path
 
-- `<metric/result this decision should improve or clarify>`
-
-Validation command:
-
-```powershell
-<command>
-```
+Validation command: `go run ./cmd/benchmark`
 
 ## Operational Cost
 
-- Docker services added: `<none|kumo|postgres|redis|rabbitmq|redpanda|...>`
-- Local demo complexity: `<low|medium|high>`
-- Failure case required: `<yes|no>`
+- Docker services added: none
+- Local demo complexity: low
+- Failure case required: no
 
 ## Follow-up
 
-- `<what must be revisited if benchmark fails>`
+- If overhead_ms > 5ms, investigate httputil.ReverseProxy copy overhead

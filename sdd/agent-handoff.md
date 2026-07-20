@@ -4,64 +4,64 @@ Project: `18 - api-gateway-lite`
 
 ## Principal Agent Summary
 
-- Objective:
-- Portfolio program:
-- Public proof claim:
-- Primary benchmark:
-- Default runnable path:
+- Objective: Implement minimal Go gateway with auth, rate limit, and OpenTelemetry tracing
+- Portfolio program: delivery-observability-infra
+- Public proof claim: gateway com auth, rate limit e observabilidade
+- Primary benchmark: overhead_ms
+- Default runnable path: `docker build -t api-gateway-lite . && docker run --rm api-gateway-lite`
 
 ## Subagent Decisions
 
 | Role | Decision | Evidence Path | Status |
 |---|---|---|---|
-| `program-planner` |  | `project.yaml`, `sdd/spec.md` | pending |
-| `architecture-selector` |  | `sdd/architecture-decision.md` | pending |
-| `engineering-principles-reviewer` |  | `project.yaml`, `sdd/technical-decision.md` | pending |
-| `stack-decision-agent` |  | `project.yaml`, `sdd/technical-decision.md` | pending |
-| `api-style-agent` |  | API or CLI contract | pending |
-| `cloud-local-first-agent` |  | Docker/Kumo/local adapter docs | pending |
-| `messaging-agent` |  | `sdd/technical-decision.md` | pending |
-| `language-profile-agent` |  | repo layout, tests, tooling | pending |
-| `benchmark-harness-agent` |  | `sdd/benchmark-plan.md`, `benchmarks/results/` | pending |
-| `design-system-agent` |  | `README.md`, diagrams | pending |
-| `security-reuse-reviewer` |  | `REFERENCES.md`, release checklist | pending |
-| `release-ci-publisher` |  | validation and CI | pending |
+| `program-planner` | Implement as modular monolith in Go | `project.yaml`, `sdd/spec.md` | done |
+| `architecture-selector` | modular-monolith with middleware pipeline | `sdd/architecture-decision.md` | done |
+| `engineering-principles-reviewer` | SOLID applied via http.Handler interface | `project.yaml`, `sdd/technical-decision.md` | done |
+| `stack-decision-agent` | Go stdlib + OTel SDK + in-memory token bucket | `project.yaml`, `sdd/technical-decision.md` | done |
+| `api-style-agent` | REST/HTTP (proxy) | N/A | done |
+| `cloud-local-first-agent` | No cloud dependencies | Docker/local adapter docs | done |
+| `messaging-agent` | none | `sdd/technical-decision.md` | done |
+| `language-profile-agent` | go-backend | repo layout, tests, tooling | done |
+| `benchmark-harness-agent` | In-process benchmark harness | `sdd/benchmark-plan.md`, `benchmarks/results/latest.json` | done |
+| `design-system-agent` | README with benchmark table and architecture | `README.md` | done |
+| `security-reuse-reviewer` | API key from env var, no hardcoded secrets | `REFERENCES.md`, release checklist | done |
+| `release-ci-publisher` | CI: test + vet + build + docker + benchmark | `.github/workflows/ci.yml` | done |
 
 ## Local-First Runtime
 
-- Docker command:
-- Local services:
-- Kumo services, if any:
-- Real cloud adapter target, if any:
-- Config switch:
+- Docker command: `docker build -t api-gateway-lite . && docker run --rm -e API_KEY=my-key -e UPSTREAM_URL=http://host.docker.internal:8081 api-gateway-lite`
+- Local services: none
+- Kumo services, if any: none
+- Real cloud adapter target, if any: none
+- Config switch: CLOUD_PROVIDER=none
 - Default path requires paid secret: no
 
 ## Architecture Boundaries
 
-- Domain boundaries:
-- Use-case boundaries:
-- Ports:
-- Adapters:
-- Dependency direction rule:
+- Domain boundaries: middleware chain (auth → rate-limit → tracing → proxy)
+- Use-case boundaries: N/A (proxy forwards all paths)
+- Ports: `http.Handler` interface
+- Adapters: env-var config, noop/stdio tracer
+- Dependency direction rule: middleware → handler interface; config → startup
 
 ## Benchmark Handoff
 
-- Metric:
-- Unit:
-- Higher or lower is better:
-- Command:
-- Result path:
-- Dataset or fixture:
+- Metric: overhead_ms
+- Unit: ms
+- Higher or lower is better: lower
+- Command: `go run ./cmd/benchmark`
+- Result path: `benchmarks/results/latest.json`
+- Dataset or fixture: in-process echo server
 
 ## Open Risks
 
-- 
+- None
 
 ## Publication Gates
 
-- [ ] Docker path works
-- [ ] benchmark result exists
-- [ ] README starts with number, claim, and benchmark
-- [ ] references are documented
-- [ ] no secret in files or git remote
-- [ ] validation passes
+- [x] Docker path works
+- [x] benchmark result exists
+- [x] README starts with number, claim, and benchmark
+- [x] references are documented
+- [x] no secret in files or git remote
+- [x] validation passes
