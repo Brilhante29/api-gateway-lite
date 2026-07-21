@@ -5,7 +5,7 @@ program:
   narrative_fit: This gateway demonstrates how to add auth, rate limiting, and distributed tracing in front of any upstream service â€” a foundational pattern for observability infrastructure.
   shared_assets:
     - ratelimit/token-bucket pattern
-status: published
+status: implemented
 claim: gateway com auth, rate limit e observabilidade
 stack:
   - go
