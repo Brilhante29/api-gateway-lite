@@ -2,15 +2,18 @@ package telemetry
 
 import (
 	"net/http"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 func Middleware(serviceName string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx, span := Tracer().Start(r.Context(), "HTTP "+r.Method+" "+r.URL.Path)
-			defer span.End()
-
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
+		return otelhttp.NewHandler(
+			next,
+			serviceName,
+			otelhttp.WithSpanNameFormatter(func(operation string, request *http.Request) string {
+				return request.Method + " " + request.URL.Path
+			}),
+		)
 	}
 }

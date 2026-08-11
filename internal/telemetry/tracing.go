@@ -2,47 +2,40 @@ package telemetry
 
 import (
 	"context"
-	"os"
+	"fmt"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 )
 
-func SetupTracerProvider(serviceName string) (trace.TracerProvider, func(), error) {
-	var tp trace.TracerProvider
+func SetupTracerProvider(ctx context.Context, serviceName, mode string) (*sdktrace.TracerProvider, func(context.Context) error, error) {
+	options := []sdktrace.TracerProviderOption{
+		sdktrace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceName(serviceName),
+		)),
+	}
 
-	if os.Getenv("TELEMETRY") == "stdout" {
-		exp, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
+	if mode == "otlp" {
+		exporter, err := otlptracehttp.New(ctx)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("create OTLP HTTP exporter: %w", err)
 		}
-		tp = sdktrace.NewTracerProvider(
-			sdktrace.WithBatcher(exp),
-			sdktrace.WithResource(resource.NewSchemaless(
-				attribute.String("service.name", serviceName),
-			)),
-		)
+		options = append(options, sdktrace.WithBatcher(exporter))
 	} else {
-		tp = trace.NewNoopTracerProvider()
+		options = append(options, sdktrace.WithSampler(sdktrace.NeverSample()))
 	}
 
-	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.TraceContext{})
+	provider := sdktrace.NewTracerProvider(options...)
+	otel.SetTracerProvider(provider)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
 
-	cleanup := func() {
-		if sdkTp, ok := tp.(*sdktrace.TracerProvider); ok {
-			_ = sdkTp.Shutdown(context.Background())
-		}
-	}
-
-	return tp, cleanup, nil
-}
-
-func Tracer() trace.Tracer {
-	return otel.Tracer("api-gateway-lite")
+	return provider, provider.Shutdown, nil
 }

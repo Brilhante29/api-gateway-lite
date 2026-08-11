@@ -8,6 +8,12 @@ import (
 
 func TestAuthValidKey(t *testing.T) {
 	handler := AuthMiddleware("test-key")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get(APIKeyHeader) != "" {
+			t.Error("API key was forwarded downstream")
+		}
+		if _, ok := PrincipalFromContext(r.Context()); !ok {
+			t.Error("authenticated principal missing from context")
+		}
 		w.WriteHeader(http.StatusOK)
 	}))
 

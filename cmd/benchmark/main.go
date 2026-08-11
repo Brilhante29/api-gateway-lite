@@ -1,90 +1,70 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
+	"strconv"
 	"time"
 
-	"github.com/Brilhante29/api-gateway-lite/internal"
 	"github.com/Brilhante29/api-gateway-lite/internal/benchmark"
-	"github.com/Brilhante29/api-gateway-lite/internal/ratelimit"
-	"github.com/Brilhante29/api-gateway-lite/internal/telemetry"
 )
 
 func main() {
-	targetMux := http.NewServeMux()
-	targetMux.HandleFunc("/echo", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "ok")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	result, err := benchmark.Run(ctx, benchmark.Config{
+		GatewayURL:           env("BENCHMARK_GATEWAY_URL", "http://gateway-benchmark:8080"),
+		DirectURL:            env("BENCHMARK_DIRECT_URL", "http://upstream:8081"),
+		APIKey:               env("API_KEY", "benchmark-key"),
+		WarmupIterations:     envInt("BENCHMARK_WARMUP", 100),
+		MeasuredIterations:   envInt("BENCHMARK_REQUESTS", 1000),
+		Concurrency:          envInt("BENCHMARK_CONCURRENCY", 16),
+		Repeat:               envInt("BENCHMARK_REPEAT", 3),
+		Command:              env("BENCHMARK_COMMAND", "docker compose --profile benchmark up --abort-on-container-exit --exit-code-from benchmark benchmark"),
+		SourceCommit:         os.Getenv("SOURCE_COMMIT"),
+		CleanTree:            env("BENCHMARK_CLEAN_TREE", "false") == "true",
+		ImageRef:             os.Getenv("IMAGE_REF"),
+		ImageDigest:          os.Getenv("IMAGE_DIGEST"),
+		DependencyLockDigest: os.Getenv("DEPENDENCY_LOCK_DIGEST"),
+		Producer:             env("BENCHMARK_PRODUCER", "local"),
+		CIRunURL:             os.Getenv("CI_RUN_URL"),
+		HardwareClass:        env("BENCHMARK_HARDWARE_CLASS", "docker-desktop"),
 	})
-	targetMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "ok")
-	})
-
-	targetServer := &http.Server{Addr: ":9091", Handler: targetMux}
-	go func() {
-		if err := targetServer.ListenAndServe(); err != http.ErrServerClosed {
-			log.Printf("target server exited: %v", err)
-		}
-	}()
-
-	cfg := internal.Config{
-		UpstreamURL: "http://localhost:9091",
-		ListenAddr:  ":9090",
-		APIKey:      "bench-key",
-		RateLimit:   10000,
-		RateBurst:   20000,
-		Telemetry:   "none",
-	}
-
-	_, cleanup, err := telemetry.SetupTracerProvider("api-gateway-lite")
-	if err != nil {
-		log.Fatalf("telemetry: %v", err)
-	}
-	defer cleanup()
-
-	proxy, err := internal.NewProxy(cfg.UpstreamURL)
-	if err != nil {
-		log.Fatalf("proxy: %v", err)
-	}
-
-	limiter := ratelimit.NewLimiter(cfg.RateLimit, cfg.RateBurst)
-
-	mux := http.NewServeMux()
-	mux.Handle("/", proxy)
-
-	handler := telemetry.Middleware("api-gateway-lite")(mux)
-	handler = ratelimit.Middleware(limiter)(handler)
-	handler = internal.AuthMiddleware(cfg.APIKey)(handler)
-
-	gatewayServer := &http.Server{Addr: cfg.ListenAddr, Handler: handler}
-	go func() {
-		if err := gatewayServer.ListenAndServe(); err != http.ErrServerClosed {
-			log.Printf("gateway exited: %v", err)
-		}
-	}()
-
-	time.Sleep(500 * time.Millisecond)
-
-	result, err := benchmark.Run("http://localhost:9090", "http://localhost:9091", 100)
 	if err != nil {
 		log.Fatalf("benchmark: %v", err)
 	}
 
-	result.Timestamp = time.Now().UTC().Format(time.RFC3339)
-	result.Command = "go run ./cmd/benchmark"
-
-	data, _ := json.MarshalIndent(result, "", "  ")
-	fmt.Println(string(data))
-
-	if err := os.MkdirAll("benchmarks/results", 0755); err == nil {
-		os.WriteFile("benchmarks/results/latest.json", data, 0644)
+	data, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		log.Fatalf("encode benchmark: %v", err)
 	}
+	data = append(data, '\n')
+	resultPath := env("BENCHMARK_RESULT_PATH", "/results/latest.json")
+	if err := os.WriteFile(resultPath, data, 0o644); err != nil {
+		log.Fatalf("write benchmark result: %v", err)
+	}
+	fmt.Print(string(data))
+}
 
-	targetServer.Close()
-	gatewayServer.Close()
+func env(name, fallback string) string {
+	if value := os.Getenv(name); value != "" {
+		return value
+	}
+	return fallback
+}
+
+func envInt(name string, fallback int) int {
+	value := os.Getenv(name)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		log.Fatalf("%s must be an integer: %v", name, err)
+	}
+	return parsed
 }

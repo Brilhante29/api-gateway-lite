@@ -8,6 +8,9 @@ import (
 
 func TestProxyForwardsRequest(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/test" || r.URL.Query().Get("page") != "2" {
+			t.Errorf("route = %s?%s, want /test?page=2", r.URL.Path, r.URL.RawQuery)
+		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("upstream ok"))
 	}))
@@ -18,7 +21,7 @@ func TestProxyForwardsRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest("GET", "/test?page=2", nil)
 	rec := httptest.NewRecorder()
 	proxy.ServeHTTP(rec, req)
 
