@@ -34,5 +34,5 @@
 - [x] Runtime code implements every functional requirement.
 - [x] Docker Compose defines gateway, upstream, Redis, and an OTLP collector.
 - [x] Benchmark runner rejects dirty or unidentified source state.
-- [ ] A V2 artifact exists and README opens with its measured result.
-- [ ] Full local validation passes from the final worktree.
+- [x] A V2 artifact exists and README opens with its measured result.
+- [x] Full local validation passes from the final worktree.

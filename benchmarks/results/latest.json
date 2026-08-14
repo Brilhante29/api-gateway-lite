@@ -1,0 +1,276 @@
+{
+  "schema_version": 2,
+  "run_id": "a2909465-636e-4d48-a638-1e6dd6a85105",
+  "project": "api-gateway-lite",
+  "benchmark_id": "gateway-overhead-v2",
+  "workload": {
+    "version": "2.0.0",
+    "fixture_digest": "sha256:fe55c944f68793a4a56470070aa0051c9da8de6eefbc73c1ad82eefafecaaf52",
+    "config_digest": "sha256:c82bc9960c84c3c5026f1cc1386d8bbbf163212b45a5688c8e5a036544b388b3",
+    "warmup_iterations": 200,
+    "measured_iterations": 2000,
+    "concurrency": 16
+  },
+  "metrics": [
+    {
+      "name": "direct_p50_ms",
+      "value": 0.456329,
+      "unit": "ms",
+      "direction": "lower_is_better",
+      "samples": [
+        0.599163,
+        0.456329,
+        0.345873
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 0.599163,
+        "median": 0.456329,
+        "min": 0.345873
+      }
+    },
+    {
+      "name": "direct_p95_ms",
+      "value": 2.026362,
+      "unit": "ms",
+      "direction": "lower_is_better",
+      "samples": [
+        3.497338,
+        2.026362,
+        1.349395
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 3.497338,
+        "median": 2.026362,
+        "min": 1.349395
+      }
+    },
+    {
+      "name": "direct_p99_ms",
+      "value": 3.522879,
+      "unit": "ms",
+      "direction": "lower_is_better",
+      "samples": [
+        6.211064,
+        3.522879,
+        3.03156
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 6.211064,
+        "median": 3.522879,
+        "min": 3.03156
+      }
+    },
+    {
+      "name": "gateway_p50_ms",
+      "value": 7.818881,
+      "unit": "ms",
+      "direction": "lower_is_better",
+      "samples": [
+        7.648198,
+        7.818881,
+        8.924006
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 8.924006,
+        "median": 7.818881,
+        "min": 7.648198
+      }
+    },
+    {
+      "name": "gateway_p95_ms",
+      "value": 23.559469,
+      "unit": "ms",
+      "direction": "lower_is_better",
+      "samples": [
+        20.214805,
+        23.559469,
+        24.186211
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 24.186211,
+        "median": 23.559469,
+        "min": 20.214805
+      }
+    },
+    {
+      "name": "gateway_p99_ms",
+      "value": 34.419315,
+      "unit": "ms",
+      "direction": "lower_is_better",
+      "samples": [
+        28.350876,
+        34.419315,
+        37.398147
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 37.398147,
+        "median": 34.419315,
+        "min": 28.350876
+      }
+    },
+    {
+      "name": "overhead_p50_ms",
+      "value": 7.362552,
+      "unit": "ms",
+      "direction": "lower_is_better",
+      "samples": [
+        7.049035,
+        7.362552,
+        8.578133000000001
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 8.578133000000001,
+        "median": 7.362552,
+        "min": 7.049035
+      }
+    },
+    {
+      "name": "overhead_p95_ms",
+      "value": 21.533107,
+      "unit": "ms",
+      "direction": "lower_is_better",
+      "samples": [
+        16.717467,
+        21.533107,
+        22.836816
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 22.836816,
+        "median": 21.533107,
+        "min": 16.717467
+      }
+    },
+    {
+      "name": "overhead_p99_ms",
+      "value": 30.896435999999998,
+      "unit": "ms",
+      "direction": "lower_is_better",
+      "samples": [
+        22.139812,
+        30.896435999999998,
+        34.366587
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 34.366587,
+        "median": 30.896435999999998,
+        "min": 22.139812
+      }
+    },
+    {
+      "name": "direct_throughput_rps",
+      "value": 17749.458949898875,
+      "unit": "requests/second",
+      "direction": "higher_is_better",
+      "samples": [
+        12309.317289073755,
+        17749.458949898875,
+        20641.035426993465
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 20641.035426993465,
+        "median": 17749.458949898875,
+        "min": 12309.317289073755
+      }
+    },
+    {
+      "name": "gateway_throughput_rps",
+      "value": 1617.1279582518948,
+      "unit": "requests/second",
+      "direction": "higher_is_better",
+      "samples": [
+        1753.8173803944294,
+        1617.1279582518948,
+        1488.7348003377665
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 1753.8173803944294,
+        "median": 1617.1279582518948,
+        "min": 1488.7348003377665
+      }
+    },
+    {
+      "name": "gateway_rejects",
+      "value": 0,
+      "unit": "requests",
+      "direction": "lower_is_better",
+      "samples": [
+        0,
+        0,
+        0
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 0,
+        "median": 0,
+        "min": 0
+      }
+    },
+    {
+      "name": "direct_failures",
+      "value": 0,
+      "unit": "requests",
+      "direction": "lower_is_better",
+      "samples": [
+        0,
+        0,
+        0
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 0,
+        "median": 0,
+        "min": 0
+      }
+    },
+    {
+      "name": "gateway_failures",
+      "value": 0,
+      "unit": "requests",
+      "direction": "lower_is_better",
+      "samples": [
+        0,
+        0,
+        0
+      ],
+      "failures": 0,
+      "summary": {
+        "max": 0,
+        "median": 0,
+        "min": 0
+      }
+    }
+  ],
+  "execution": {
+    "command": "pwsh ./tools/run-benchmark.ps1",
+    "started_at": "2026-08-14T04:04:19Z",
+    "duration_seconds": 4.279714584,
+    "exit_code": 0,
+    "repeat": 3
+  },
+  "environment": {
+    "runtime": "go1.23.12",
+    "architecture": "linux/amd64",
+    "hardware_class": "docker-desktop"
+  },
+  "provenance": {
+    "source_commit": "10371288ad7b400fb6b73dcaf9c1f0a680df0345",
+    "clean_tree": true,
+    "image_ref": "api-gateway-lite:benchmark-10371288ad7b",
+    "image_digest": "sha256:4d7e694679f557f753a9af6e735fc22825471e68b2a3ef93185c380990d8ba74",
+    "dependency_lock_digest": "sha256:4cdb68a95f5d69dd6d1fcbcec86ea38ff871e91e81fac16aad08c0fe52c01044",
+    "producer": "local",
+    "artifact_digest": "sha256:f5be17979cf23c1158b6e6a0d51bca607b1a9460b08b9886049842a4a1c5f3a4"
+  },
+  "comparability_key": "api-gateway-lite:v2:echo:2000x16:r3:redis-otel"
+}

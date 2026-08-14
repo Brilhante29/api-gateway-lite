@@ -3,6 +3,7 @@ __pycache__/
 .ruff_cache/
 .venv/
 benchmarks/results/*.json
+!benchmarks/results/latest.json
 dist/
 target/
 build/

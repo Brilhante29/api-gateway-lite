@@ -7,7 +7,7 @@ program:
     - atomic Redis token-bucket contract
     - benchmark evidence V2 pattern
     - OTLP local-first runtime
-status: implemented
+status: benchmarked
 claim: A small Go gateway can enforce authentication and a shared atomic quota while propagating correlation and trace context with measured overhead.
 stack:
   - go-1.23

@@ -79,6 +79,9 @@ if (Test-Path -LiteralPath $reuseReviewPath) {
 
 $resultPath = Join-Path $root "benchmarks/results/latest.json"
 if (Test-Path -LiteralPath $resultPath) {
+  $trackedResult = git -C $root ls-files --error-unmatch benchmarks/results/latest.json 2>$null
+  if ($LASTEXITCODE -ne 0 -or -not $trackedResult) { Add-Failure "Benchmark latest.json must be tracked by Git" }
+  $global:LASTEXITCODE = 0
   try {
     $artifact = Get-Content -Raw -LiteralPath $resultPath | ConvertFrom-Json
     if ($artifact.schema_version -ne 2) { Add-Failure "Benchmark schema_version must be 2" }
@@ -157,7 +160,7 @@ try {
         $global:LASTEXITCODE = 0
 
         $headers = Join-Path ([System.IO.Path]::GetTempPath()) "api-gateway-lite-headers.txt"
-        Invoke-Checked "Authenticated smoke" { curl.exe --fail --silent --dump-header $headers -H "X-API-Key: local-demo-key" -H "X-Correlation-ID: validation-1" http://localhost:8080/echo }
+        Invoke-Checked "Authenticated smoke" { curl.exe --fail --silent --output NUL --dump-header $headers -H "X-API-Key: local-demo-key" -H "X-Correlation-ID: validation-1" http://localhost:8080/echo }
         $headerText = Get-Content -Raw -LiteralPath $headers
         foreach ($pattern in @("X-Correlation-Id: validation-1", "X-Received-Correlation-Id: validation-1", "X-Received-Traceparent: 00-")) {
           if ($headerText -notmatch [regex]::Escape($pattern)) { Add-Failure "Compose smoke is missing header evidence: $pattern" }
@@ -189,3 +192,4 @@ if ($failures.Count -gt 0) {
 }
 
 Write-Host "portfolio project validation passed"
+exit 0

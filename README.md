@@ -2,7 +2,7 @@
 
 **Claim:** a small Go gateway can enforce API-key authentication and one atomic Redis quota across replicas while propagating correlation and W3C trace context to any HTTP upstream.
 
-**Measured result:** pending the reproducible V2 run from the clean implementation commit.
+**Measured result:** `21.533 ms` median p95 overhead and `1,617.13 req/s` through the gateway, with zero rejects and zero failures across three Docker repetitions.
 
 **Stack:** Go 1.23, `net/http`, `httputil.ReverseProxy`, Redis 7.4, OpenTelemetry OTLP/HTTP, OpenTelemetry Collector, Docker Compose.
 
@@ -42,6 +42,19 @@ Inspect local trace exports with `docker compose logs otel-collector`.
 ## Benchmark V2
 
 The harness compares the same `/echo` upstream directly and through the production gateway path. It alternates measurement order, warms both paths, runs three repetitions, and records p50/p95/p99 latency, overhead, throughput, rejects, failures, workload digests, image digest, dependency-lock digest, exact commit, and producer.
+
+| Metric | Median of 3 runs | Unit |
+|---|---:|---|
+| `overhead_p50_ms` | 7.363 | ms |
+| `overhead_p95_ms` | 21.533 | ms |
+| `overhead_p99_ms` | 30.896 | ms |
+| `gateway_p95_ms` | 23.559 | ms |
+| `direct_throughput_rps` | 17,749.46 | requests/second |
+| `gateway_throughput_rps` | 1,617.13 | requests/second |
+| `gateway_rejects` | 0 | requests |
+| `direct_failures` / `gateway_failures` | 0 / 0 | requests |
+
+Evidence source: clean commit `10371288ad7b400fb6b73dcaf9c1f0a680df0345`, Go `1.23.12`, Linux/amd64 on Docker Desktop. The committed JSON retains unrounded samples and all provenance digests.
 
 ```powershell
 pwsh ./tools/run-benchmark.ps1

@@ -7,8 +7,8 @@ Project: `18 - api-gateway-lite`
 - [x] after scaffold
 - [x] after architecture decision
 - [x] after first working slice
-- [ ] after benchmark result
-- [ ] before final local release
+- [x] after benchmark result
+- [x] before final local release
 - [ ] after CI failure, if applicable
 
 ## Findings
@@ -19,6 +19,8 @@ Project: `18 - api-gateway-lite`
 | Redis server-time Lua plus a two-client atomicity contract is reusable for Go rate-limit projects. | backlog | Go backend skill | Extract the contract shape, not project package code. | recorded |
 | Compose smoke should verify context at the upstream boundary, not only gateway response status. | backlog | CI templates | Add an optional upstream-observation gate. | recorded |
 | This collector configuration is intentionally a debug-only local adapter. | reject | runtime templates | Keep project-specific until another repo needs the same trace-only topology. | resolved |
+
+The local run confirmed all three backlog candidates without changing another repository: the wrappers preserved exact provenance, the Redis contract caught cross-container networking assumptions, and the upstream-observation smoke proved both correlation and W3C trace propagation.
 
 ## Scope Control
 

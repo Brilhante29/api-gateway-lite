@@ -1,8 +1,8 @@
 # Agent Handoff
 
-## Current Objective
+## Completed Objective
 
-Finish `#18 api-gateway-lite` as a benchmarked local repository. Do not push or use a GitHub token in this worktree.
+`#18 api-gateway-lite` is a benchmarked local repository. It was not pushed and no GitHub token was used in this worktree.
 
 ## Decisions Already Closed
 
@@ -28,9 +28,11 @@ Finish `#18 api-gateway-lite` as a benchmarked local repository. Do not push or 
 - Runtime implementation: complete.
 - Unit/integration test definitions: complete.
 - Docker/Compose and CI definitions: complete.
-- Benchmark evidence: pending clean implementation commit and run.
-- Final local validation and clean worktree: pending.
+- Benchmark evidence: V2 generated from clean source commit `10371288ad7b400fb6b73dcaf9c1f0a680df0345`.
+- Result: p95 overhead `21.533 ms`, gateway throughput `1,617.13 req/s`, zero rejects, zero failures.
+- Final local validation: complete with Docker, real Redis, OTLP export, Compose smoke, and artifact gates.
+- GitHub Actions: workflow defined but intentionally not executed because this task forbids push.
 
 ## Continuation Rule
 
-Read `AGENTS.md`, then this file and `git status`. Preserve the exact provenance in `benchmarks/results/latest.json`; never hand-edit measured values. Complete only the pending verification items, update the README and checklists from the generated artifact, commit locally, and leave the worktree clean. Do not push.
+Read `AGENTS.md`, then this file and `git status`. Preserve the exact provenance in `benchmarks/results/latest.json`; never hand-edit measured values. The next task may publish only if explicitly requested; otherwise keep this final local head unchanged.
