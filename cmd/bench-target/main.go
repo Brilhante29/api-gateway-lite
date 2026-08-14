@@ -15,6 +15,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/echo", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Received-Correlation-ID", r.Header.Get("X-Correlation-ID"))
+		w.Header().Set("X-Received-Traceparent", r.Header.Get("traceparent"))
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "ok")
 	})

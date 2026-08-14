@@ -2,7 +2,7 @@ schema: portfolio-system
 references:
   - portfolio-reuse-kit
 context: |
-  Project: api-gateway-lite (#unknown)
+  Project: api-gateway-lite (#18)
   Source of truth:
     - Use `.portfolio/` as the local snapshot of portfolio-reuse-kit.
     - Use `project.yaml` for the public project contract.

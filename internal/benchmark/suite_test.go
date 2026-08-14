@@ -37,16 +37,25 @@ func TestRunProducesComparableV2Evidence(t *testing.T) {
 	if result.SchemaVersion != 2 || result.Execution.Repeat != 3 {
 		t.Fatalf("unexpected V2 identity: schema=%d repeat=%d", result.SchemaVersion, result.Execution.Repeat)
 	}
-	if len(result.Metrics) != 7 {
-		t.Fatalf("metrics = %d, want 7", len(result.Metrics))
+	if len(result.Metrics) != 14 {
+		t.Fatalf("metrics = %d, want 14", len(result.Metrics))
 	}
 	for _, metric := range result.Metrics {
 		if len(metric.Samples) != 3 {
 			t.Errorf("metric %s samples = %d, want 3", metric.Name, len(metric.Samples))
 		}
 	}
-	if result.Metrics[0].Name != "overhead_p50_ms" || result.Metrics[0].Value <= 0 {
-		t.Errorf("primary metric = %+v", result.Metrics[0])
+	metrics := make(map[string]Metric, len(result.Metrics))
+	for _, metric := range result.Metrics {
+		metrics[metric.Name] = metric
+	}
+	if metrics["overhead_p50_ms"].Value <= 0 {
+		t.Errorf("primary metric = %+v", metrics["overhead_p50_ms"])
+	}
+	for _, name := range []string{"direct_p95_ms", "gateway_p95_ms", "overhead_p95_ms", "direct_throughput_rps", "gateway_throughput_rps", "gateway_rejects", "direct_failures", "gateway_failures"} {
+		if _, ok := metrics[name]; !ok {
+			t.Errorf("missing metric %q", name)
+		}
 	}
 	if len(result.Provenance.ArtifactDigest) != 71 {
 		t.Errorf("artifact digest = %q", result.Provenance.ArtifactDigest)

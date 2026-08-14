@@ -1,0 +1,10 @@
+.git
+.github
+.portfolio
+.agents
+.codex
+benchmarks/results
+sdd
+*.md
+Dockerfile*
+docker-compose*.yml

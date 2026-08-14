@@ -2,99 +2,97 @@ id: 18
 name: api-gateway-lite
 program:
   id: delivery-observability-infra
-  narrative_fit: This gateway demonstrates how to add auth, rate limiting, and distributed tracing in front of any upstream service â€” a foundational pattern for observability infrastructure.
+  narrative_fit: This repository proves a reusable ingress boundary with measurable overhead, shared quotas, and vendor-neutral trace export for the delivery and observability portfolio.
   shared_assets:
-    - ratelimit/token-bucket pattern
-status: benchmarked
-claim: gateway com auth, rate limit e observabilidade
+    - atomic Redis token-bucket contract
+    - benchmark evidence V2 pattern
+    - OTLP local-first runtime
+status: implemented
+claim: A small Go gateway can enforce authentication and a shared atomic quota while propagating correlation and trace context with measured overhead.
 stack:
-  - go
-  - reverse-proxy
-  - redis
-  - opentelemetry
-  - k6
-  - docker
+  - go-1.23
+  - net-http-reverse-proxy
+  - redis-7.4
+  - opentelemetry-otlp-http
+  - otel-collector
+  - docker-compose
 language_profile:
   primary: go-backend
   secondary: []
-  reason: Go is the standard for high-throughput reverse proxies and middleware pipelines; stdlib httputil.ReverseProxy eliminates framework overhead for benchmark purity.
+  reason: Go net/http exposes the proxy and middleware costs directly while preserving standard HTTP interoperability and low operational weight.
 decision_brain:
   agentic_spec:
     source: .portfolio/decision-brain/agentic-spec-governance.yaml
-    spec_store: portfolio-reuse-kit
     schema: portfolio-system
     project_config: openspec/config.yaml
     component_pack: default-portfolio-project
-    artifact_graph:
-      - intent->portfolio-impact->architecture-record
-      - architecture-record+portfolio-impact->component-pack
-      - component-pack->reuse-delta->benchmark-proof->tasks->verification
   agent_graph:
-    mode: principal-agent-orchestrated
+    mode: sequential-subagent-roles
     source: .portfolio/decision-brain/agent-graph.yaml
     handoff: sdd/agent-handoff.md
-    local_first_runtime: docker+kumo-when-cloud-behavior-is-needed
   reuse_improvement_loop:
     source: .portfolio/decision-brain/reuse-improvement-loop.yaml
     review_path: sdd/reuse-improvement-review.md
     current_status: completed
   principles:
-    coupling_rule: domain/use cases do not depend on framework, database, broker, cloud SDK, transport, or UI
+    coupling_rule: The gateway composition depends on small Limiter and HealthChecker capabilities; Redis and OTLP remain replaceable infrastructure details.
     solid: [srp, ocp, lsp, isp, dip]
-    simplicity_rule: in-memory token bucket over Redis avoids unnecessary network dependency for local path
-    testability_rule: all middleware tested via httptest without real servers
+    simplicity_rule: One Go binary and standard HTTP middleware are used; Redis exists only because cross-instance atomic quota is part of the proof.
+    testability_rule: HTTP behavior runs under httptest, Redis behavior has a real shared-instance contract, and OTLP export is verified against an HTTP collector stub.
     rejected_overengineering:
-      - Redis-backed rate limiter (overkill for single-instance gateway)
-      - OTLP exporter with collector (stdout exporter sufficient for local demo)
-      - Circuit breaker (YAGNI for current scope)
+      - dynamic route administration
+      - service discovery
+      - retries and circuit breaking
+      - a message broker
   stack_profile: go-backend
   api_style: rest-http
   messaging: none
   cloud:
     mode: none
-    local_provider: kumo
-    real_provider_target: none
+    local_provider: not-applicable; Kumo is reserved for projects that prove AWS semantics
+    real_provider_target: any OTLP-compatible observability backend
     emulated_services: []
-    adapter_rule: ports/adapters keep cloud SDK outside domain/use cases
-    config_switch: CLOUD_PROVIDER=none
-    unsupported_behaviors: []
-  database: none
-  runtime: go 1.22, alpine 3.20
-  library_policy: stdlib net/http/httputil for proxy, otel SDK for tracing, in-memory token bucket for rate limiting
+    adapter_rule: OTLP endpoint selection is configuration-only and no vendor SDK enters request policy or proxy code.
+    config_switch: TELEMETRY=otlp|none
+    unsupported_behaviors:
+      - vendor-specific authentication
+      - managed gateway control planes
+  database: Redis is an operational quota store, not a system-of-record database
+  runtime: Go 1.23 on Alpine 3.21
+  library_policy: Use Go stdlib for HTTP and reverse proxying, go-redis for the atomic Redis adapter, and official OpenTelemetry packages for trace instrumentation and export.
   record_path: sdd/technical-decision.md
   rejected_options:
-    - option: gin-gonic/gin framework
-      reason: stdlib is lighter for benchmark purity; gin adds measurable overhead
-    - option: Redis-backed rate limiter
-      reason: unnecessary network hop for local demo; YAGNI for single-instance
-    - option: OTLP gRPC exporter
-      reason: stdout exporter is simpler for local demo; gRPC adds dependency weight
+    - option: Gin or Fiber
+      reason: The gateway needs standard net/http middleware and transparent overhead, not framework routing features.
+    - option: in-memory rate limiter
+      reason: It cannot enforce one quota across replicas and would invalidate the reliability claim.
+    - option: vendor observability SDK
+      reason: OTLP keeps the exporter replaceable and the default runtime credential-free.
 architecture:
   style: modular-monolith
-  reason: The gateway is a single binary with composable middleware layers (auth, rate limit, tracing) wrapping a reverse proxy. This avoids microservice complexity while keeping each concern independently testable and swappable.
+  reason: Authentication, quota, telemetry, and proxying share one request lifecycle and deployment unit while remaining isolated as composable modules.
   problem_forces:
     domain_complexity: low
-    integration_pressure: low
+    integration_pressure: high
     ui_state_complexity: none
     data_or_ml_reproducibility: low
-    auditability: low
-    throughput_or_async: medium
+    auditability: medium
+    throughput_or_async: high
     independent_deployability: low
-  dependency_rule: middleware depends on the handler interface only; config is parsed at startup and injected
+  dependency_rule: Startup composes concrete adapters; request policy depends only on narrow interfaces and net/http contracts.
   boundaries:
-    - internal/config: startup configuration
-    - internal/proxy: upstream forwarding
-    - internal/auth: API key validation
-    - internal/ratelimit: token bucket + HTTP middleware
-    - internal/telemetry: tracing setup + HTTP middleware
-    - internal/benchmark: overhead measurement harness
+    - internal/auth owns credential verification and principal creation
+    - internal/ratelimit owns quota policy plus the Redis adapter
+    - internal/telemetry owns correlation and OpenTelemetry integration
+    - internal/proxy owns upstream forwarding
+    - internal/benchmark owns evidence generation
   rejected_alternatives:
     - style: microservices
-      reason: adds deployment and coordination complexity without benefit for a single-process gateway
-    - style: hexagonal architecture
-      reason: ports/adapters abstraction adds indirection that inflates overhead_ms benchmark
+      reason: Splitting one synchronous request path creates network and deployment costs without independent business capabilities.
+    - style: clean-architecture
+      reason: Full use-case and entity rings add ceremony to a policy pipeline with no independent domain model.
 design_system:
-  tokens: design-system/tokens.yaml
+  tokens: .portfolio/design-system/tokens.yaml
   readme_components:
     - readme_header
     - benchmark_card
@@ -102,30 +100,20 @@ design_system:
     - references_table
   diagram_required: true
 reuse:
-  kit_version: local
+  kit_version: local-snapshot
   uses:
-    - catalog
-    - programs
-    - proficiency-map
-    - component-packs
-    - openspec-schema
-    - decision-brain
-    - agent-graph
+    - default-portfolio-project
+    - go-backend-language-profile
+    - benchmark-result-v2
+    - engineering-principles
     - reuse-improvement-loop
-    - architecture
-    - language-profiles
-    - design-system
-    - sdd
-    - harness
-    - templates
-    - skills
 benchmark:
-  primary_metric: overhead_ms
-  unit: unit
-  command: go run ./cmd/benchmark
+  primary_metric: overhead_p95_ms
+  unit: ms
+  command: pwsh ./tools/run-benchmark.ps1
   result_path: benchmarks/results/latest.json
 release:
-  docker: implemented
+  docker: compose-runtime-and-benchmark-implemented
   no_secret_default_path: true
   readme_has_number: true
   references_documented: true

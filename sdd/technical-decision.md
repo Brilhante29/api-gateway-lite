@@ -1,101 +1,34 @@
 # Technical Decision
 
-## Status
+## Selected Stack
 
-Accepted
+- Go 1.23 and `net/http`/`httputil.ReverseProxy` for a visible, standard request path.
+- `go-redis/v9` with one Lua token-bucket operation using Redis server time.
+- OpenTelemetry Go HTTP instrumentation plus OTLP/HTTP exporter.
+- Redis 7.4 and OpenTelemetry Collector under Docker Compose.
 
-## Decision Type
+## Rate-Limit Semantics
 
-stack, library, runtime
+The authenticated API key is hashed into a stable principal. The key itself is removed before forwarding. Redis atomically reads server time, refills tokens, consumes one token when available, stores state, and refreshes TTL. The Redis key uses a hash tag around the principal so the script remains single-slot compatible. Adapter errors produce `503`; exhausted quota produces `429` and `Retry-After`.
 
-## Context
+## Telemetry Semantics
 
-Project: api-gateway-lite
-Problem: Minimal gateway with auth, rate limiting, and observability — measured by latency overhead
-Portfolio program: delivery-observability-infra
-Public signal: Go reverse-proxy middleware proficiency
-Benchmark: overhead_ms
+The outer correlation middleware accepts only bounded `[A-Za-z0-9_.-]` values and otherwise creates a cryptographically random ID. The OTel server handler extracts inbound W3C context and starts a span; the outbound transport injects the resulting context. `correlation.id` is a span attribute. OTLP endpoint and backend authentication are SDK environment configuration, keeping vendor SDKs out of request policy.
 
-## Selected Option
+## API Decision
 
-Selected: Go stdlib net/http/httputil.ReverseProxy + in-memory token bucket + OTel noop exporter
+REST/HTTP is selected because this component transparently forwards arbitrary HTTP upstreams. GraphQL would impose a schema and resolver lifecycle unrelated to the claim; gRPC would narrow interoperability and belongs in project #15. The gateway-owned contract is limited to `GET /healthz`, `X-API-Key`, `X-Correlation-ID`, W3C trace headers, and rate-limit response headers.
 
-Reason:
+## Local-First and Cloud
 
-Go's stdlib ReverseProxy is the lightest possible forwarder — no framework overhead. The in-memory token bucket avoids a Redis dependency for the default local path. OTel with noop exporter gives full tracing API without requiring a collector, keeping the default demo credential-free.
+The default path uses local Redis and an OTel Collector and needs no secret. Kumo is not started because this repository does not model an AWS service. A real observability backend plugs in through OTLP environment variables; no cloud SDK is imported.
 
-## Decision Brain Fields
+## Rejected Libraries and Infrastructure
 
-- Stack profile: go-backend
-- API style: rest-http
-- Messaging: none
-- Cloud mode: none
-- Database/runtime: go 1.22, alpine 3.20
-- Library policy: stdlib for proxy, OTel SDK for tracing, in-memory for rate limiting
-
-## Engineering Principles
-
-Coupling boundary:
-
-Middleware depends on `http.Handler` interface; no domain code depends on transport detail.
-
-SOLID application:
-
-- SRP: each internal package owns exactly one concern (auth, rate-limit, proxy, telemetry)
-- OCP: middleware stack composable by wrapping handlers; new middleware added without modifying existing code
-- LSP: any `http.Handler` can be wrapped; no interface subversion
-- ISP: middleware interface is `func(http.Handler) http.Handler` — one method
-- DIP: high-level HTTP server depends on `http.Handler` abstraction, not concrete middleware
-
-Simplicity:
-
-- KISS: in-memory token bucket over Redis avoids unnecessary network dependency
-- YAGNI: circuit breaker, retry logic, request logging not added
-- DRY: duplicated business knowledge removed without premature abstraction
-
-Testability evidence:
-
-- Auth test: httptest without real servers
-- Proxy test: httptest upstream without starting real process
-- Limiter test: pure Go, no network
-- Benchmark test: measure function tested with httptest
-
-## Rejected Options
-
-| Option | Why rejected |
+| Option | Reason |
 |---|---|
-| gin-gonic/gin framework | stdlib is lighter for benchmark purity; gin adds measurable overhead |
-| Redis-backed rate limiter | unnecessary network hop for local demo; YAGNI for single-instance |
-| OTLP gRPC exporter | stdout exporter is simpler for local demo; gRPC adds dependency weight |
-
-## API Contract
-
-Contract artifact: none (internal proxy, no public API surface)
-
-GraphQL controls, when applicable: N/A
-
-## Cloud Local-First
-
-Local provider: none
-
-Real provider target: none
-
-Config switch: `CLOUD_PROVIDER=none`
-
-Unsupported local behaviors: none
-
-## Benchmark Impact
-
-Expected impact: overhead_ms should be < 2ms for the simple echo path
-
-Validation command: `go run ./cmd/benchmark`
-
-## Operational Cost
-
-- Docker services added: none
-- Local demo complexity: low
-- Failure case required: no
-
-## Follow-up
-
-- If overhead_ms > 5ms, investigate httputil.ReverseProxy copy overhead
+| Gin/Fiber | Standard `net/http` compatibility and transparent overhead matter more than routing ergonomics. |
+| In-memory quota | Cannot prove atomic shared behavior. |
+| Kafka/RabbitMQ | The path is synchronous and has no event delivery semantics. |
+| Vendor tracing SDK | OTLP already provides the required pluggability. |
+| Retry/circuit-breaker library | Changes proxy semantics and benchmark scope without being part of the claim. |

@@ -126,13 +126,21 @@ func Run(ctx context.Context, cfg Config) (*Result, error) {
 	directRuns := make([]endpointStats, 0, cfg.Repeat)
 	gatewayRuns := make([]endpointStats, 0, cfg.Repeat)
 	for repetition := 0; repetition < cfg.Repeat; repetition++ {
-		direct, err := measure(ctx, client, cfg.DirectURL+"/echo", cfg.APIKey, cfg.MeasuredIterations, cfg.Concurrency)
-		if err != nil {
-			return nil, fmt.Errorf("direct repetition %d: %w", repetition+1, err)
+		var direct, gateway endpointStats
+		var err error
+		if repetition%2 == 0 {
+			direct, err = measure(ctx, client, cfg.DirectURL+"/echo", cfg.APIKey, cfg.MeasuredIterations, cfg.Concurrency)
+			if err == nil {
+				gateway, err = measure(ctx, client, cfg.GatewayURL+"/echo", cfg.APIKey, cfg.MeasuredIterations, cfg.Concurrency)
+			}
+		} else {
+			gateway, err = measure(ctx, client, cfg.GatewayURL+"/echo", cfg.APIKey, cfg.MeasuredIterations, cfg.Concurrency)
+			if err == nil {
+				direct, err = measure(ctx, client, cfg.DirectURL+"/echo", cfg.APIKey, cfg.MeasuredIterations, cfg.Concurrency)
+			}
 		}
-		gateway, err := measure(ctx, client, cfg.GatewayURL+"/echo", cfg.APIKey, cfg.MeasuredIterations, cfg.Concurrency)
 		if err != nil {
-			return nil, fmt.Errorf("gateway repetition %d: %w", repetition+1, err)
+			return nil, fmt.Errorf("repetition %d: %w", repetition+1, err)
 		}
 		directRuns = append(directRuns, direct)
 		gatewayRuns = append(gatewayRuns, gateway)
@@ -301,12 +309,19 @@ func buildMetrics(direct, gateway []endpointStats) []Metric {
 	directFailures := counts(direct, func(stats endpointStats) int { return stats.failures })
 
 	return []Metric{
+		metric("direct_p50_ms", "ms", "lower_is_better", directP50, sum(directFailures)),
+		metric("direct_p95_ms", "ms", "lower_is_better", directP95, sum(directFailures)),
+		metric("direct_p99_ms", "ms", "lower_is_better", directP99, sum(directFailures)),
+		metric("gateway_p50_ms", "ms", "lower_is_better", gatewayP50, sum(gatewayFailures)),
+		metric("gateway_p95_ms", "ms", "lower_is_better", gatewayP95, sum(gatewayFailures)),
+		metric("gateway_p99_ms", "ms", "lower_is_better", gatewayP99, sum(gatewayFailures)),
 		metric("overhead_p50_ms", "ms", "lower_is_better", overheadP50, sum(gatewayFailures)+sum(directFailures)),
 		metric("overhead_p95_ms", "ms", "lower_is_better", overheadP95, sum(gatewayFailures)+sum(directFailures)),
 		metric("overhead_p99_ms", "ms", "lower_is_better", overheadP99, sum(gatewayFailures)+sum(directFailures)),
 		metric("direct_throughput_rps", "requests/second", "higher_is_better", directRPS, sum(directFailures)),
 		metric("gateway_throughput_rps", "requests/second", "higher_is_better", gatewayRPS, sum(gatewayFailures)),
 		metric("gateway_rejects", "requests", "lower_is_better", gatewayRejects, 0),
+		metric("direct_failures", "requests", "lower_is_better", directFailures, sum(directFailures)),
 		metric("gateway_failures", "requests", "lower_is_better", gatewayFailures, sum(gatewayFailures)),
 	}
 }

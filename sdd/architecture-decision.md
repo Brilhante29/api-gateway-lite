@@ -1,80 +1,42 @@
 # Architecture Decision
 
-## Status
-
-Accepted
-
-## Context
-
-Project: api-gateway-lite
-Claim: gateway com auth, rate limit e observabilidade
-Benchmark: overhead_ms
-
-Problem forces:
-
-- Domain complexity: low
-- Integration pressure: low
-- UI state complexity: none
-- Data/ML reproducibility: low
-- Auditability/event history: low
-- Throughput/async pressure: medium
-- Independent deployability need: low
-
 ## Decision
 
-Chosen architecture: modular-monolith
+Use a modular monolith: one Go process composes authentication, quota, telemetry, and reverse-proxy modules around `http.Handler`. Keep external behavior behind the narrow `ratelimit.Limiter` and `HealthChecker` capabilities; construct Redis and OpenTelemetry adapters only at startup.
 
-Reason:
+## Why This Fits
 
-The gateway is a single binary with composable middleware layers (auth, rate limit, tracing) wrapping a reverse proxy. This avoids microservice complexity while keeping each concern independently testable and swappable. Each middleware is a self-contained package with its own tests and a clean `func(http.Handler) http.Handler` interface.
+The problem has one synchronous request lifecycle, low domain complexity, high integration pressure, and a low-latency benchmark. Independent deployment of each concern would add hops and failure modes without creating independently valuable capabilities.
 
-Dependency rule:
+```text
+cmd/api-gateway-lite (composition root)
+  -> internal/auth
+  -> internal/ratelimit.Limiter <- Redis Lua adapter
+  -> internal/telemetry        <- OTLP/HTTP adapter
+  -> internal/proxy            -> arbitrary HTTP upstream
+```
 
-Middleware depends on the handler interface only; config is parsed at startup and injected; no domain code depends on transport detail.
+Dependency direction points from the composition root to small policies and ports. Redis clients, environment reads, and exporter construction do not leak into authentication, proxy, or benchmark policy.
+
+## Principles
+
+- SRP: auth, quota, telemetry, proxy, configuration, and evidence each have one owner.
+- OCP: another limiter or exporter can be injected without rewriting gateway composition.
+- LSP: limiter implementations must preserve allow/reject/error semantics; real Redis tests define the current contract.
+- ISP: `Limiter.Allow` and `HealthChecker.Ping` expose only the capabilities their callers need.
+- DIP: the handler pipeline depends on interfaces; startup selects concrete infrastructure.
+- KISS/YAGNI: standard `net/http`, one upstream, one Redis script, and OTLP are enough for the claim.
+- DRY: quota arithmetic exists once in the atomic script; propagation and evidence schemas have one implementation each.
 
 ## Rejected Alternatives
 
-| Alternative | Why rejected |
+| Alternative | Reason |
 |---|---|
-| microservices | adds deployment and coordination complexity without benefit for a single-process gateway |
-| hexagonal architecture | ports/adapters abstraction adds indirection that inflates overhead_ms benchmark |
-
-## Folder Layout
-
-```
-cmd/
-  api-gateway-lite/    entry point, parses flags, starts server
-  bench-target/        simple echo server for benchmarking
-  benchmark/           benchmark runner (starts target+gateway, measures overhead)
-internal/
-  config.go            env-var-based configuration
-  proxy.go             ReverseProxy handler
-  auth.go              API key validation middleware
-  ratelimit/           token bucket + HTTP middleware
-  telemetry/           OTel setup + tracing middleware
-  benchmark/           benchmark suite (measure functions)
-```
-
-## Testing Strategy
-
-- Unit tests: each middleware and component tested with httptest
-- Integration tests: proxy_test.go verifies forwarding and error handling
-- Benchmark: in-process servers + measure functions produce overhead_ms
+| Microservices | Adds network hops and coordination to one request policy pipeline. |
+| Full clean-architecture rings | No independent business entity or use case justifies the extra layers. |
+| In-memory limiter | Breaks shared quota under replicas and restart. |
+| Gateway framework | Hides the standard HTTP costs this repository measures. |
 
 ## Consequences
 
-Positive:
-
-- Each concern (auth, rate limit, tracing) is independently testable
-- stdlib ReverseProxy is lightweight and battle-tested
-- Zero external dependencies for default run path (no Redis, no DB)
-
-Tradeoffs:
-
-- Single-instance only; no distributed rate limiting without Redis
-- In-memory token bucket state is lost on restart
-
-Migration path:
-
-- Replace in-memory bucket with Redis-backed counter via interface
-- Replace noop tracer with OTLP exporter by changing env var
+Redis availability is now part of protected request availability, intentionally enforced as fail-closed. OTLP failure does not change authorization or quota behavior because export is asynchronous. Dynamic routing and resilience policies remain outside this repository.

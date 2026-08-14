@@ -1,11 +1,12 @@
-# References
+# References and Reuse
 
-| Reference | License | Used for | Copied code? |
+| Reference | License | Applied idea | Copied code |
 |---|---|---|---|
-| Go stdlib `net/http/httputil` | BSD-style Go license | Reverse proxy implementation | no |
-| OpenTelemetry Go SDK | Apache 2.0 | Distributed tracing setup | no |
-| OpenTelemetry Go stdout exporter | Apache 2.0 | Trace export for local demo | no |
-| envoy-ratelimit (reference pattern) | Apache 2.0 | Token bucket architecture inspiration | no |
-| opentelemetry-demo (reference pattern) | Apache 2.0 | Middleware layering pattern | no |
+| Go `net/http/httputil` | BSD-3-Clause | Standard reverse-proxy implementation and HTTP interoperability | no |
+| Redis command and Lua scripting documentation | RSALv2/SSPLv1 for Redis distribution; documentation terms apply | Server-time atomic token-bucket state transition | no |
+| `redis/go-redis` | BSD-2-Clause | Redis client and script execution API | no |
+| OpenTelemetry Go | Apache-2.0 | Server/client instrumentation, W3C propagation, OTLP export | no |
+| OpenTelemetry Collector Contrib | Apache-2.0 | Credential-free local OTLP receiver and debug exporter | no |
+| `portfolio-reuse-kit` local snapshot | repository license | SDD, decision graph, Go profile, benchmark V2 contract, and release gates | patterns/templates only |
 
-Implementation, fixtures, benchmark scripts and reported results are project-specific.
+All gateway code, Lua script, tests, Compose topology, fixture, benchmark runner, and result are project-specific. No external source code was copied into this repository.

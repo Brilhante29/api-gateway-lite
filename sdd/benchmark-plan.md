@@ -1,41 +1,46 @@
-# Benchmark Plan: api-gateway-lite
+# Benchmark Plan: Gateway Overhead V2
 
 ## Hypothesis
 
-gateway com auth, rate limit e observabilidade, measured by overhead_ms — the latency difference between a direct upstream call and a gateway-mediated call.
+The gateway adds measurable but bounded latency to the same echo workload while preserving successful throughput with zero rejects and failures under a deliberately non-binding benchmark quota.
 
-## Command
+## Reproducible Command
 
-```bash
-go run ./cmd/benchmark
+```powershell
+pwsh ./tools/run-benchmark.ps1
 ```
 
-## Environment
+```bash
+sh ./tools/run-benchmark.sh
+```
 
-- OS: any (Docker or Go 1.22+)
-- CPU: any
-- RAM: any
-- GPU: none
-- Docker version: any
-- Date: recorded in result JSON
+Both wrappers require a clean commit, build one immutable local image, capture its digest and the `go.sum` digest, then run the same image as upstream, gateway, and benchmark client under Compose.
 
-## Inputs
+## Workload
 
-- fixture: in-process echo server
-- dataset size: N/A
-- repetitions: 100 requests per path
-- warmup: none
+- Fixture: `GET /echo`, response `200 ok`.
+- Warmup: 200 requests per path.
+- Measured: 2,000 requests per path per repetition.
+- Concurrency: 16 workers.
+- Repetitions: 3 minimum.
+- Order control: direct then gateway on even runs; gateway then direct on odd runs.
+- Gateway path: API-key auth, Redis Lua quota, correlation middleware, OTel server/client instrumentation, OTLP export, reverse proxy.
 
 ## Metrics
 
-| Metric | Unit | Source | Why it matters |
-|---|---:|---|---|
-| overhead_ms | ms | benchmark suite | proves the repo claim — the gateway should add minimal latency |
+| Metric family | Unit | Direction |
+|---|---|---|
+| Direct and gateway p50/p95/p99 | ms | lower |
+| Overhead p50/p95/p99 | ms | lower |
+| Direct and gateway throughput | requests/second | higher |
+| Direct/gateway failures and gateway rejects | requests | lower |
 
-## Result schema
+The primary public metric is median `overhead_p95_ms` across repetitions. The artifact also records every repetition, summaries, workload/config digests, runtime, architecture, exact source commit, clean-tree gate, image and dependency digests, producer, command, and comparability key.
 
-Output must be JSON and include project, metric, value, unit, timestamp, environment, and command. Written to `benchmarks/results/latest.json`.
+## Interpretation Limits
 
-## Post angle
+The direct and gateway runs are sequential within each repetition, so host scheduling can produce noise or occasional negative deltas. Alternating order reduces systematic bias. Results compare only identical comparability keys on similar Docker hosts and do not model TLS, large bodies, WAN latency, or multi-region Redis.
 
-#18 api-gateway-lite: overhead_ms as a reproducible portfolio benchmark — a minimal Go gateway that proves auth + rate limiting + tracing can stay under measurable overhead.
+## Output
+
+`benchmarks/results/latest.json`, conforming to `.portfolio/contracts/benchmark-result-v2.schema.json` and requiring at least three samples per metric.

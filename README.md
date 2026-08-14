@@ -1,61 +1,82 @@
-# #18 api-gateway-lite
+# #18 API Gateway Lite
 
-**Status:** benchmarked
+**Claim:** a small Go gateway can enforce API-key authentication and one atomic Redis quota across replicas while propagating correlation and W3C trace context to any HTTP upstream.
 
-**Claim:** gateway com auth, rate limit e observabilidade.
+**Measured result:** pending the reproducible V2 run from the clean implementation commit.
 
-**Benchmark target:** overhead_ms — latency overhead introduced by the gateway.
-
-**Stack:** go, reverse-proxy, opentelemetry, docker.
-
-## Benchmark
-
-| Metric | Value | Unit |
-|---|---:|---:|
-| overhead_ms | 0.34 | ms |
-
-Run the benchmark locally:
-
-```bash
-go run ./cmd/benchmark
-```
-
-Or via Docker:
-
-```bash
-docker build -t api-gateway-lite .
-docker run --rm api-gateway-lite benchmark
-```
+**Stack:** Go 1.23, `net/http`, `httputil.ReverseProxy`, Redis 7.4, OpenTelemetry OTLP/HTTP, OpenTelemetry Collector, Docker Compose.
 
 ## Run
 
-Start the target upstream server:
+```bash
+docker compose up --build --wait
+curl -i -H "X-API-Key: local-demo-key" -H "X-Correlation-ID: demo-1" http://localhost:8080/echo
+```
+
+The response is `200 ok`, includes quota headers, returns `X-Correlation-ID`, and exposes the correlation and `traceparent` values observed by the upstream. No paid credential is required. Stop the stack with:
 
 ```bash
-go run ./cmd/bench-target
+docker compose down --volumes
 ```
 
-Then start the gateway (default :8080 → :8081):
+## What It Proves
+
+```text
+client
+  -> correlation + inbound OTel span
+  -> constant-time API-key check
+  -> atomic Redis token bucket
+  -> instrumented reverse proxy
+  -> upstream with correlation + W3C trace context
+  -> OTLP/HTTP collector
+```
+
+- Authentication credentials are removed before proxying.
+- A Lua script uses Redis `TIME` and updates refill plus consumption atomically, so replicas share one quota without trusting local clocks.
+- The gateway fails closed with `503` when Redis is unavailable and emits `429` plus standard and compatibility rate-limit headers when quota is exhausted.
+- Correlation IDs are validated, returned to the caller, forwarded upstream, and attached to the server span.
+- OpenTelemetry uses standard W3C propagation and exports over OTLP/HTTP; `TELEMETRY=none` disables export without changing request policy.
+
+Inspect local trace exports with `docker compose logs otel-collector`.
+
+## Benchmark V2
+
+The harness compares the same `/echo` upstream directly and through the production gateway path. It alternates measurement order, warms both paths, runs three repetitions, and records p50/p95/p99 latency, overhead, throughput, rejects, failures, workload digests, image digest, dependency-lock digest, exact commit, and producer.
+
+```powershell
+pwsh ./tools/run-benchmark.ps1
+```
 
 ```bash
-export API_KEY=my-secret
-go run ./cmd/api-gateway-lite
+sh ./tools/run-benchmark.sh
 ```
 
-Test with curl:
+The runner intentionally refuses a dirty worktree. Output: `benchmarks/results/latest.json`.
 
-```bash
-curl -H "X-API-Key: my-secret" http://localhost:8080/echo
+## Configuration
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `API_KEY` | `local-demo-key` | Demo credential; inject a secret in real deployments |
+| `UPSTREAM_URL` | `http://localhost:8081` | HTTP(S) upstream |
+| `REDIS_ADDR` | `localhost:6379` | Shared quota store |
+| `RATE_LIMIT` | `100` | Tokens added per second |
+| `RATE_BURST` | `200` | Bucket capacity |
+| `TELEMETRY` | `otlp` | `otlp` or `none` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTel SDK default | OTLP/HTTP collector endpoint |
+
+## Limits
+
+- API keys are a focused gateway mechanism, not user identity, OAuth, key rotation, TLS termination, or an authorization server.
+- Routes are configured through one upstream URL; there is no control plane, service discovery, retry, circuit breaker, cache, WAF, or request-body policy.
+- Redis is mandatory because shared quota is part of the claim. Its outage deliberately rejects protected traffic.
+- Benchmark numbers measure a tiny echo payload on one Docker host. Compare only artifacts with the same `comparability_key`; they are not internet or multi-region capacity claims.
+- The local collector uses a debug exporter. Production backends remain pluggable through the OTLP endpoint and their own authentication settings.
+
+## Verify
+
+```powershell
+./tools/validate-project.ps1
 ```
 
-## Architecture
-
-```
-client → auth middleware → rate limiter → tracing middleware → reverse proxy → upstream
-```
-
-Each middleware layer is independently testable. The reverse proxy uses Go's stdlib `httputil.ReverseProxy`.
-
-## References
-
-See REFERENCES.md.
+CI repeats formatting, dependency-lock, vet, race tests, real Redis contract tests, Compose smoke checks, benchmark V2 generation, and artifact validation. Design decisions live in `sdd/`; sources and reuse attribution live in `REFERENCES.md`.

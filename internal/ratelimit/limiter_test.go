@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"strconv"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -123,5 +125,48 @@ func TestRedisLimiterSharesQuotaAcrossInstances(t *testing.T) {
 	}
 	if third.Allowed || third.Remaining != 0 {
 		t.Fatalf("shared quota was not enforced: %+v", third)
+	}
+}
+
+func TestRedisLimiterConsumesSharedBurstAtomically(t *testing.T) {
+	address := os.Getenv("TEST_REDIS_ADDR")
+	if address == "" {
+		t.Skip("TEST_REDIS_ADDR is required for the Redis integration contract")
+	}
+
+	clientA := NewRedisClient(address, "", 0)
+	clientB := NewRedisClient(address, "", 0)
+	t.Cleanup(func() { _ = clientA.Close() })
+	t.Cleanup(func() { _ = clientB.Close() })
+
+	const burst = 10
+	prefix := "api-gateway-lite:atomic:" + strconv.FormatInt(time.Now().UnixNano(), 10)
+	limiters := []*RedisLimiter{
+		NewRedisLimiter(clientA, 0.000001, burst, prefix),
+		NewRedisLimiter(clientB, 0.000001, burst, prefix),
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var allowed atomic.Int32
+	var wait sync.WaitGroup
+	for index := 0; index < 50; index++ {
+		wait.Add(1)
+		go func(limiter *RedisLimiter) {
+			defer wait.Done()
+			decision, err := limiter.Allow(ctx, "shared-principal")
+			if err != nil {
+				t.Errorf("allow: %v", err)
+				return
+			}
+			if decision.Allowed {
+				allowed.Add(1)
+			}
+		}(limiters[index%len(limiters)])
+	}
+	wait.Wait()
+
+	if got := allowed.Load(); got != burst {
+		t.Fatalf("allowed = %d, want exactly shared burst %d", got, burst)
 	}
 }

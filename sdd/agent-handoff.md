@@ -1,67 +1,36 @@
 # Agent Handoff
 
-Project: `18 - api-gateway-lite`
+## Current Objective
 
-## Principal Agent Summary
+Finish `#18 api-gateway-lite` as a benchmarked local repository. Do not push or use a GitHub token in this worktree.
 
-- Objective: Implement minimal Go gateway with auth, rate limit, and OpenTelemetry tracing
-- Portfolio program: delivery-observability-infra
-- Public proof claim: gateway com auth, rate limit e observabilidade
-- Primary benchmark: overhead_ms
-- Default runnable path: `docker build -t api-gateway-lite . && docker run --rm api-gateway-lite`
+## Decisions Already Closed
 
-## Subagent Decisions
+| Role | Decision | Evidence |
+|---|---|---|
+| Program planner | Keep the repo in `delivery-observability-infra`. | `project.yaml` |
+| Architecture selector | Modular monolith with ports at Redis and health boundaries. | `sdd/architecture-decision.md` |
+| Principles reviewer | SOLID, LSP, DIP, KISS, YAGNI, and fail-closed semantics are explicit and tested. | architecture ADR and tests |
+| Stack/API agents | Go stdlib reverse proxy over REST/HTTP; Redis and official OTel packages. | `sdd/technical-decision.md` |
+| Cloud/messaging agents | Local Compose, no Kumo because no AWS behavior, no broker, OTLP backend pluggability. | Compose and technical ADR |
+| Benchmark agent | V2 direct-vs-gateway harness with three repetitions and exact provenance. | `internal/benchmark`, scripts |
+| Reuse reviewer | Record portable Redis and V2 wrapper patterns for kit extraction; do not couple this repo back to the kit. | reuse review |
 
-| Role | Decision | Evidence Path | Status |
-|---|---|---|---|
-| `program-planner` | Implement as modular monolith in Go | `project.yaml`, `sdd/spec.md` | done |
-| `architecture-selector` | modular-monolith with middleware pipeline | `sdd/architecture-decision.md` | done |
-| `engineering-principles-reviewer` | SOLID applied via http.Handler interface | `project.yaml`, `sdd/technical-decision.md` | done |
-| `stack-decision-agent` | Go stdlib + OTel SDK + in-memory token bucket | `project.yaml`, `sdd/technical-decision.md` | done |
-| `api-style-agent` | REST/HTTP (proxy) | N/A | done |
-| `cloud-local-first-agent` | No cloud dependencies | Docker/local adapter docs | done |
-| `messaging-agent` | none | `sdd/technical-decision.md` | done |
-| `language-profile-agent` | go-backend | repo layout, tests, tooling | done |
-| `benchmark-harness-agent` | In-process benchmark harness | `sdd/benchmark-plan.md`, `benchmarks/results/latest.json` | done |
-| `design-system-agent` | README with benchmark table and architecture | `README.md` | done |
-| `security-reuse-reviewer` | API key from env var, no hardcoded secrets | `REFERENCES.md`, release checklist | done |
-| `release-ci-publisher` | CI: test + vet + build + docker + benchmark | `.github/workflows/ci.yml` | done |
+## Runtime
 
-## Local-First Runtime
+- Demo: `docker compose up --build --wait`
+- Request: `curl -i -H "X-API-Key: local-demo-key" http://localhost:8080/echo`
+- Benchmark: `pwsh ./tools/run-benchmark.ps1` or `sh ./tools/run-benchmark.sh`
+- Validation: `./tools/validate-project.ps1`
 
-- Docker command: `docker build -t api-gateway-lite . && docker run --rm -e API_KEY=my-key -e UPSTREAM_URL=http://host.docker.internal:8081 api-gateway-lite`
-- Local services: none
-- Kumo services, if any: none
-- Real cloud adapter target, if any: none
-- Config switch: CLOUD_PROVIDER=none
-- Default path requires paid secret: no
+## Verification State
 
-## Architecture Boundaries
+- Runtime implementation: complete.
+- Unit/integration test definitions: complete.
+- Docker/Compose and CI definitions: complete.
+- Benchmark evidence: pending clean implementation commit and run.
+- Final local validation and clean worktree: pending.
 
-- Domain boundaries: middleware chain (auth → rate-limit → tracing → proxy)
-- Use-case boundaries: N/A (proxy forwards all paths)
-- Ports: `http.Handler` interface
-- Adapters: env-var config, noop/stdio tracer
-- Dependency direction rule: middleware → handler interface; config → startup
+## Continuation Rule
 
-## Benchmark Handoff
-
-- Metric: overhead_ms
-- Unit: ms
-- Higher or lower is better: lower
-- Command: `go run ./cmd/benchmark`
-- Result path: `benchmarks/results/latest.json`
-- Dataset or fixture: in-process echo server
-
-## Open Risks
-
-- None
-
-## Publication Gates
-
-- [x] Docker path works
-- [x] benchmark result exists
-- [x] README starts with number, claim, and benchmark
-- [x] references are documented
-- [x] no secret in files or git remote
-- [x] validation passes
+Read `AGENTS.md`, then this file and `git status`. Preserve the exact provenance in `benchmarks/results/latest.json`; never hand-edit measured values. Complete only the pending verification items, update the README and checklists from the generated artifact, commit locally, and leave the worktree clean. Do not push.
