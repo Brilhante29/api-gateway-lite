@@ -3,7 +3,7 @@
 ## Portfolio Contract
 
 - Project: `#18 api-gateway-lite`
-- Macro project: `delivery-observability-infra`
+- Macro project: `backend-reliability-platform`
 - Claim: authenticate, enforce a shared quota, propagate telemetry context, and quantify gateway overhead.
 - Default runtime: local Docker Compose with no paid credentials.
 

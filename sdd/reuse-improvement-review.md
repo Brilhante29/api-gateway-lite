@@ -15,16 +15,16 @@ Project: `18 - api-gateway-lite`
 
 | Finding | Classification | Kit area | Resolution | Status |
 |---|---|---|---|---|
-| Cross-platform benchmark wrappers should derive commit, image, and dependency digests and reject dirty trees. | backlog | benchmark harness | Generalize after this project proves both wrappers. | recorded |
+| Cross-platform benchmark wrappers should derive commit, image, and dependency digests and reject dirty trees. | patch_now | benchmark harness | Both wrappers now preserve canonical evidence locally and accept a separate CI result directory. | resolved |
 | Redis server-time Lua plus a two-client atomicity contract is reusable for Go rate-limit projects. | backlog | Go backend skill | Extract the contract shape, not project package code. | recorded |
 | Compose smoke should verify context at the upstream boundary, not only gateway response status. | backlog | CI templates | Add an optional upstream-observation gate. | recorded |
 | This collector configuration is intentionally a debug-only local adapter. | reject | runtime templates | Keep project-specific until another repo needs the same trace-only topology. | resolved |
 
-The local run confirmed all three backlog candidates without changing another repository: the wrappers preserved exact provenance, the Redis contract caught cross-container networking assumptions, and the upstream-observation smoke proved both correlation and W3C trace propagation.
+The local run confirmed the reusable candidates: the wrappers preserved exact provenance, the Redis contract caught cross-container networking assumptions, and the upstream-observation smoke proved both correlation and W3C trace propagation. The central kit records the stable-publication-versus-CI-smoke rule.
 
 ## Scope Control
 
-No kit repository is modified from this worktree. The reusable deltas are documented for the principal portfolio task because changing another repository would violate the single-repository execution constraint.
+Project-specific gateway code remains here. Only the general benchmark evidence rule belongs in `portfolio-reuse-kit`.
 
 ## Final Gate
 

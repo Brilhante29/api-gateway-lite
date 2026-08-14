@@ -110,7 +110,7 @@ services:
       DEPENDENCY_LOCK_DIGEST: ${DEPENDENCY_LOCK_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
       CI_RUN_URL: ${CI_RUN_URL:-}
     volumes:
-      - ./benchmarks/results:/results
+      - ${BENCHMARK_RESULTS_DIR:-./benchmarks/results}:/results
     depends_on:
       gateway-benchmark:
         condition: service_healthy

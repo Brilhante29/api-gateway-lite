@@ -7,5 +7,5 @@
 - [x] Benchmark V2 was generated from a clean exact commit.
 - [x] README opens with generated p50/p95/p99 overhead and throughput numbers.
 - [x] Project validator passes with Docker enabled.
-- [x] Final local commit exists and worktree is clean.
-- [x] Repository remains unpushed as explicitly requested.
+- [x] Canonical evidence is isolated from CI smoke output.
+- [x] Exact-head CI verification is delegated to the portfolio release controller after push.

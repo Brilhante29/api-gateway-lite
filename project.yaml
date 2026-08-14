@@ -1,13 +1,13 @@
 id: 18
 name: api-gateway-lite
 program:
-  id: delivery-observability-infra
-  narrative_fit: This repository proves a reusable ingress boundary with measurable overhead, shared quotas, and vendor-neutral trace export for the delivery and observability portfolio.
+  id: backend-reliability-platform
+  narrative_fit: This repository is the ingress edge of the backend platform, proving shared quotas, replaceable telemetry, and measurable proxy overhead before traffic reaches application services.
   shared_assets:
     - atomic Redis token-bucket contract
     - benchmark evidence V2 pattern
     - OTLP local-first runtime
-status: benchmarked
+status: published
 claim: A small Go gateway can enforce authentication and a shared atomic quota while propagating correlation and trace context with measured overhead.
 stack:
   - go-1.23

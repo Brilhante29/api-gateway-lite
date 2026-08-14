@@ -65,6 +65,7 @@ sh ./tools/run-benchmark.sh
 ```
 
 The runner intentionally refuses a dirty worktree. Output: `benchmarks/results/latest.json`.
+CI sends regenerated smoke evidence to `runner.temp`; it never replaces this committed publication baseline.
 
 ## Configuration
 

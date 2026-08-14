@@ -61,6 +61,7 @@ jobs:
           BENCHMARK_PRODUCER: github-actions
           BENCHMARK_HARDWARE_CLASS: github-hosted-ubuntu
           CI_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BENCHMARK_RESULTS_DIR: ${{ runner.temp }}/api-gateway-lite
         run: sh ./tools/run-benchmark.sh
       - name: Validate benchmark and project
         shell: pwsh
@@ -68,6 +69,6 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: benchmark-v2-${{ github.sha }}
-          path: benchmarks/results/latest.json
+          path: ${{ runner.temp }}/api-gateway-lite/latest.json
           if-no-files-found: error
           retention-days: 14

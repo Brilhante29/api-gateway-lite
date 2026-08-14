@@ -2,13 +2,13 @@
 
 ## Completed Objective
 
-`#18 api-gateway-lite` is a benchmarked local repository. It was not pushed and no GitHub token was used in this worktree.
+`#18 api-gateway-lite` is implementation- and evidence-complete for the Backend Reliability and Architecture Platform. Publication automation must verify CI against the exact pushed head.
 
 ## Decisions Already Closed
 
 | Role | Decision | Evidence |
 |---|---|---|
-| Program planner | Keep the repo in `delivery-observability-infra`. | `project.yaml` |
+| Program planner | Use the repo as the ingress edge of `backend-reliability-platform`; OTLP also demonstrates observability interoperability. | `project.yaml` |
 | Architecture selector | Modular monolith with ports at Redis and health boundaries. | `sdd/architecture-decision.md` |
 | Principles reviewer | SOLID, LSP, DIP, KISS, YAGNI, and fail-closed semantics are explicit and tested. | architecture ADR and tests |
 | Stack/API agents | Go stdlib reverse proxy over REST/HTTP; Redis and official OTel packages. | `sdd/technical-decision.md` |
@@ -35,4 +35,4 @@
 
 ## Continuation Rule
 
-Read `AGENTS.md`, then this file and `git status`. Preserve the exact provenance in `benchmarks/results/latest.json`; never hand-edit measured values. The next task may publish only if explicitly requested; otherwise keep this final local head unchanged.
+Read `AGENTS.md`, then this file and `git status`. Preserve the exact provenance in `benchmarks/results/latest.json`; never hand-edit measured values. CI smoke output belongs under `runner.temp`, and release status must be checked against the exact pushed head.

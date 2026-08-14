@@ -22,6 +22,9 @@ export BENCHMARK_CLEAN_TREE=true
 export BENCHMARK_COMMAND="sh ./tools/run-benchmark.sh"
 export BENCHMARK_PRODUCER="${BENCHMARK_PRODUCER:-local}"
 export BENCHMARK_HARDWARE_CLASS="${BENCHMARK_HARDWARE_CLASS:-docker-linux}"
+BENCHMARK_RESULTS_DIR="${BENCHMARK_RESULTS_DIR:-$root/benchmarks/results}"
+mkdir -p "$BENCHMARK_RESULTS_DIR"
+export BENCHMARK_RESULTS_DIR
 
 cleanup() {
   docker compose --profile benchmark down --volumes --remove-orphans >/dev/null 2>&1 || true
@@ -29,4 +32,4 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 docker compose --profile benchmark up --no-build --abort-on-container-exit --exit-code-from benchmark benchmark
-test -f benchmarks/results/latest.json
+test -f "$BENCHMARK_RESULTS_DIR/latest.json"

@@ -60,7 +60,8 @@ if (Test-Path -LiteralPath $readmePath) {
 $projectPath = Join-Path $root "project.yaml"
 if (Test-Path -LiteralPath $projectPath) {
   $project = Get-Content -Raw -LiteralPath $projectPath
-  if ($project -notmatch '(?m)^status: benchmarked\r?$') { Add-Failure "project.yaml status must be benchmarked" }
+  if ($project -notmatch '(?m)^status: published\r?$') { Add-Failure "project.yaml status must be published" }
+  if ($project -notmatch '(?m)^  id: backend-reliability-platform\r?$') { Add-Failure "project.yaml must belong to backend-reliability-platform" }
   if ($project -notmatch '(?m)^  primary_metric: overhead_p95_ms\r?$') { Add-Failure "project.yaml primary metric must be overhead_p95_ms" }
 }
 
@@ -110,6 +111,14 @@ if (Test-Path -LiteralPath $resultPath) {
     }
   } catch {
     Add-Failure "Benchmark JSON could not be parsed: $($_.Exception.Message)"
+  }
+}
+
+$workflowPath = Join-Path $root ".github/workflows/ci.yml"
+if (Test-Path -LiteralPath $workflowPath) {
+  $workflow = Get-Content -Raw -LiteralPath $workflowPath
+  if ($workflow -notmatch 'runner.temp' -or $workflow -notmatch 'BENCHMARK_RESULTS_DIR') {
+    Add-Failure "CI benchmark smoke must not overwrite the canonical publication artifact"
   }
 }
 
