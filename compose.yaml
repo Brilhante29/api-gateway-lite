@@ -90,6 +90,7 @@ services:
   benchmark:
     <<: *app-image
     profiles: ["benchmark"]
+    user: "${BENCHMARK_UID:-1000}:${BENCHMARK_GID:-1000}"
     command: ["benchmark"]
     environment:
       API_KEY: benchmark-key

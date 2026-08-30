@@ -23,8 +23,10 @@ export BENCHMARK_COMMAND="sh ./tools/run-benchmark.sh"
 export BENCHMARK_PRODUCER="${BENCHMARK_PRODUCER:-local}"
 export BENCHMARK_HARDWARE_CLASS="${BENCHMARK_HARDWARE_CLASS:-docker-linux}"
 BENCHMARK_RESULTS_DIR="${BENCHMARK_RESULTS_DIR:-$root/benchmarks/results}"
+BENCHMARK_UID="${BENCHMARK_UID:-$(id -u)}"
+BENCHMARK_GID="${BENCHMARK_GID:-$(id -g)}"
 mkdir -p "$BENCHMARK_RESULTS_DIR"
-export BENCHMARK_RESULTS_DIR
+export BENCHMARK_RESULTS_DIR BENCHMARK_UID BENCHMARK_GID
 
 cleanup() {
   docker compose --profile benchmark down --volumes --remove-orphans >/dev/null 2>&1 || true
