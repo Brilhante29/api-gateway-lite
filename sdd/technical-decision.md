@@ -2,7 +2,8 @@
 
 ## Selected Stack
 
-- Go 1.23 and `net/http`/`httputil.ReverseProxy` for a visible, standard request path.
+- Go 1.26.8 and `net/http`/`httputil.ReverseProxy` for a visible, standard request path.
+- Security refresh and historical benchmark scope: [2026-09-14 decision](security-refresh-2026-09-14.md).
 - `go-redis/v9` with one Lua token-bucket operation using Redis server time.
 - OpenTelemetry Go HTTP instrumentation plus OTLP/HTTP exporter.
 - Redis 7.4 and OpenTelemetry Collector under Docker Compose.

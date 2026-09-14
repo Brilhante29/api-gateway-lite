@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine AS build
+FROM golang:1.26.8-alpine3.24 AS build
 
 WORKDIR /src
 COPY go.mod go.sum ./
@@ -12,9 +12,9 @@ RUN test -z "$(gofmt -l .)" && \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/bench-target ./cmd/bench-target && \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/benchmark ./cmd/benchmark
 
-FROM alpine:3.21
+FROM alpine:3.24
 
-RUN apk add --no-cache ca-certificates && \
+RUN apk upgrade --no-cache && apk add --no-cache ca-certificates && \
     addgroup -S app && \
     adduser -S -G app app
 COPY --from=build /out/api-gateway-lite /usr/local/bin/api-gateway-lite

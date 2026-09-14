@@ -10,7 +10,7 @@ program:
 status: published
 claim: A small Go gateway can enforce authentication and a shared atomic quota while propagating correlation and trace context with measured overhead.
 stack:
-  - go-1.23
+  - go-1.26.8
   - net-http-reverse-proxy
   - redis-7.4
   - opentelemetry-otlp-http
@@ -58,7 +58,7 @@ decision_brain:
       - vendor-specific authentication
       - managed gateway control planes
   database: Redis is an operational quota store, not a system-of-record database
-  runtime: Go 1.23 on Alpine 3.21
+  runtime: Go 1.26.8 on Alpine 3.24; historical benchmark evidence predates the security refresh.
   library_policy: Use Go stdlib for HTTP and reverse proxying, go-redis for the atomic Redis adapter, and official OpenTelemetry packages for trace instrumentation and export.
   record_path: sdd/technical-decision.md
   rejected_options:
