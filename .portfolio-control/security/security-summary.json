@@ -1,18 +1,12 @@
 {
   "disposition": "documented",
-  "fixable": 77,
-  "fixable_packages": {
-    "go.opentelemetry.io/otel/sdk": 2,
-    "golang.org/x/net": 6,
-    "golang.org/x/text": 1,
-    "google.golang.org/grpc": 2,
-    "stdlib": 66
-  },
-  "generated_at": "2026-08-21T13:37:48.786677Z",
-  "high_critical_total": 77,
+  "fixable": 0,
+  "fixable_packages": {},
+  "generated_at": "2026-09-15T02:56:24.093493Z",
+  "high_critical_total": 0,
   "image": "api-gateway-lite:sec",
   "no_upstream_fix": 0,
   "rationale": "Base images are pinned by digest so benchmark provenance stays comparable. Rebuilding does not clear these advisories: the current upstream digest carries the same set. Applying apt-get upgrade would make the image non-deterministic and change image_digest between builds of the same commit, breaking the V2 comparability contract.",
   "repository": "api-gateway-lite",
-  "sbom_packages": 51
+  "sbom_packages": 53
 }
