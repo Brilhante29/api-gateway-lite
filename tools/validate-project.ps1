@@ -50,7 +50,7 @@ foreach ($file in $requiredFiles) { Require-File $file }
 $readmePath = Join-Path $root "README.md"
 if (Test-Path -LiteralPath $readmePath) {
   $readme = Get-Content -Raw -LiteralPath $readmePath
-  if ($readme -notmatch '^# #18 API Gateway Lite') { Add-Failure "README must open with project number and name" }
+  if ($readme -notmatch '^# API Gateway Lite') { Add-Failure "README must open with the project name" }
   if ($readme -match 'Measured result:\*\* pending') { Add-Failure "README still has a pending benchmark result" }
   foreach ($metric in @("overhead_p50_ms", "overhead_p95_ms", "overhead_p99_ms", "gateway_throughput_rps")) {
     if ($readme -notmatch [regex]::Escape($metric)) { Add-Failure "README is missing metric $metric" }
