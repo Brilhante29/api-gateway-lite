@@ -15,6 +15,25 @@ Every service eventually needs the same edge concerns: who is calling, how much 
 - `429` with standard and compatibility rate-limit headers when the quota is exhausted, and `503` (fail closed) when Redis is down;
 - validated correlation IDs and W3C trace context propagated upstream and exported over OTLP/HTTP.
 
+## Results
+
+The harness compares the same `/echo` upstream directly and through the full gateway path. It alternates measurement order, warms both paths, runs three repetitions, and records latency percentiles, overhead, throughput, rejects, failures, workload digests, image digest, dependency-lock digest, exact commit, and producer.
+
+| Metric | Median of 3 runs | Unit |
+|---|---:|---|
+| `overhead_p50_ms` | 7.363 | ms |
+| `overhead_p95_ms` | 21.533 | ms |
+| `overhead_p99_ms` | 30.896 | ms |
+| `gateway_p95_ms` | 23.559 | ms |
+| `direct_throughput_rps` | 17,749.46 | requests/second |
+| `gateway_throughput_rps` | 1,617.13 | requests/second |
+| `gateway_rejects` | 0 | requests |
+| `direct_failures` / `gateway_failures` | 0 / 0 | requests |
+
+**How to read it:** every gateway request pays for authentication, a Redis round trip for the quota decision, span creation and export, and a second HTTP hop, against a tiny echo payload on one Docker host. The overhead is the price of those guarantees in this setup; it is not an internet or multi-region capacity figure. Compare only artifacts with the same `comparability_key`.
+
+Evidence source: clean commit `10371288ad7b400fb6b73dcaf9c1f0a680df0345`, measured with Go `1.23.12` on Linux/amd64 (Docker Desktop); the runtime has since moved to Go 1.26 for security fixes. The committed JSON keeps unrounded samples and all provenance digests. Regenerate with `sh ./tools/run-benchmark.sh` (refuses a dirty worktree; writes `benchmarks/results/latest.json`).
+
 ## Quickstart
 
 ```bash
@@ -40,25 +59,6 @@ client
 
 `TELEMETRY=none` disables export without changing request policy.
 
-## Results
-
-The harness compares the same `/echo` upstream directly and through the full gateway path. It alternates measurement order, warms both paths, runs three repetitions, and records latency percentiles, overhead, throughput, rejects, failures, workload digests, image digest, dependency-lock digest, exact commit, and producer.
-
-| Metric | Median of 3 runs | Unit |
-|---|---:|---|
-| `overhead_p50_ms` | 7.363 | ms |
-| `overhead_p95_ms` | 21.533 | ms |
-| `overhead_p99_ms` | 30.896 | ms |
-| `gateway_p95_ms` | 23.559 | ms |
-| `direct_throughput_rps` | 17,749.46 | requests/second |
-| `gateway_throughput_rps` | 1,617.13 | requests/second |
-| `gateway_rejects` | 0 | requests |
-| `direct_failures` / `gateway_failures` | 0 / 0 | requests |
-
-How to read it: every gateway request pays for authentication, a Redis round trip for the quota decision, span creation and export, and a second HTTP hop, against a tiny echo payload on one Docker host. The overhead is the price of those guarantees in this setup; it is not an internet or multi-region capacity figure. Compare only artifacts with the same `comparability_key`.
-
-Evidence source: clean commit `10371288ad7b400fb6b73dcaf9c1f0a680df0345`, measured with Go `1.23.12` on Linux/amd64 (Docker Desktop); the runtime has since moved to Go 1.26 for security fixes. The committed JSON keeps unrounded samples and all provenance digests. Regenerate with `sh ./tools/run-benchmark.sh` (refuses a dirty worktree; writes `benchmarks/results/latest.json`).
-
 ## Configuration
 
 | Variable | Default | Purpose |
@@ -80,12 +80,6 @@ Evidence source: clean commit `10371288ad7b400fb6b73dcaf9c1f0a680df0345`, measur
 | Fail closed on Redis outage | Protected traffic must not bypass the quota | Fail open |
 | OpenTelemetry with W3C propagation | Vendor-neutral traces through any backend | Proprietary tracing headers |
 
-## Limitations
-
-- API keys are a focused mechanism, not user identity, OAuth, key rotation, TLS termination, or an authorization server.
-- One upstream URL; no control plane, service discovery, retries, circuit breaker, cache, WAF, or body policy.
-- The local collector uses a debug exporter; production backends plug in through the OTLP endpoint.
-
 ## Testing
 
 ```bash
@@ -94,6 +88,12 @@ go vet ./...
 ```
 
 CI repeats formatting, dependency-lock checks, vet, race tests, real Redis contract tests, Compose smoke checks, benchmark V2 generation, and artifact validation.
+
+## Limitations
+
+- API keys are a focused mechanism, not user identity, OAuth, key rotation, TLS termination, or an authorization server.
+- One upstream URL; no control plane, service discovery, retries, circuit breaker, cache, WAF, or body policy.
+- The local collector uses a debug exporter; production backends plug in through the OTLP endpoint.
 
 ## Project structure
 
